@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ===== CHART CONFIGURATION =====
 let chart;
+let chartData = []; // Store data for better management
 
 function initChart() {
     const ctx = document.getElementById('tempChart');
@@ -64,8 +65,8 @@ function initChart() {
                 pointBackgroundColor: '#f59e0b',
                 pointBorderColor: '#fff',
                 pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6,
+                pointRadius: 5,
+                pointHoverRadius: 7,
             }]
         },
         options: {
@@ -88,12 +89,16 @@ function initChart() {
                     titleColor: '#f59e0b',
                     bodyColor: '#e2e8f0',
                     borderColor: '#f59e0b',
-                    borderWidth: 1
+                    borderWidth: 1,
+                    callbacks: {
+                        label: function(context) {
+                            return `Temperature: ${context.parsed.y.toFixed(1)}°C`;
+                        }
+                    }
                 }
             },
             scales: {
                 y: {
-                    beginAtZero: false,
                     min: 30,
                     max: 45,
                     grid: {
@@ -101,8 +106,17 @@ function initChart() {
                     },
                     ticks: {
                         color: '#e2e8f0',
+                        stepSize: 2,
                         callback: function(value) {
                             return value + '°C';
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Temperature (°C)',
+                        color: '#94a3b8',
+                        font: {
+                            size: 12
                         }
                     }
                 },
@@ -113,7 +127,17 @@ function initChart() {
                     ticks: {
                         color: '#e2e8f0',
                         maxRotation: 45,
-                        minRotation: 45
+                        minRotation: 45,
+                        autoSkip: true,
+                        maxTicksLimit: 10
+                    },
+                    title: {
+                        display: true,
+                        text: 'Time',
+                        color: '#94a3b8',
+                        font: {
+                            size: 12
+                        }
                     }
                 }
             },
@@ -121,6 +145,9 @@ function initChart() {
                 mode: 'nearest',
                 axis: 'x',
                 intersect: false
+            },
+            animation: {
+                duration: 500
             }
         }
     });
@@ -200,37 +227,36 @@ function updateConnectionStatus(isConnected) {
     }
 }
 
-// ===== UPDATE DEVICE STATUS =====
-function updateStatus(id, value, isFan = false) {
+// ===== UPDATE DEVICE STATUS (TANPA ANIMASI SPIN) =====
+function updateStatus(id, value) {
     const el = document.getElementById(id);
     if (!el) {
         console.warn(`Element ${id} not found`);
         return;
     }
 
-    el.innerText = value;
+    // Normalisasi nilai
+    let status = value.toString().toUpperCase();
+    if (status === "1") status = "ON";
+    if (status === "0") status = "OFF";
     
-    if (value === "ON" || value === "1" || value === "on") {
+    el.innerText = status;
+    
+    if (status === "ON") {
         el.classList.add("on");
         el.classList.remove("off");
-        
-        // Add animation for fan
-        if (isFan && id === "kipas") {
-            el.classList.add("spin");
-        }
+        // HAPUS class spin jika ada (untuk kipas)
+        el.classList.remove("spin");
     } else {
         el.classList.add("off");
         el.classList.remove("on");
-        
-        if (isFan && id === "kipas") {
-            el.classList.remove("spin");
-        }
+        // HAPUS class spin jika ada
+        el.classList.remove("spin");
     }
 }
 
 // ===== SHOW NOTIFICATION =====
 function showNotification(message, type) {
-    // Create or get notification element
     let notificationDiv = document.getElementById('floatingNotification');
     if (!notificationDiv) {
         notificationDiv = document.createElement('div');
@@ -250,7 +276,6 @@ function showNotification(message, type) {
         `;
         document.body.appendChild(notificationDiv);
         
-        // Add animation styles if not exists
         if (!document.querySelector('#notificationStyles')) {
             const style = document.createElement('style');
             style.id = 'notificationStyles';
@@ -280,7 +305,6 @@ function showNotification(message, type) {
         }
     }
     
-    // Set style based on type
     if (type === "error") {
         notificationDiv.style.background = 'rgba(239, 68, 68, 0.95)';
         notificationDiv.style.border = '1px solid #ef4444';
@@ -298,7 +322,6 @@ function showNotification(message, type) {
     notificationDiv.innerHTML = message;
     notificationDiv.style.display = 'block';
     
-    // Auto hide after 3 seconds
     setTimeout(() => {
         if (notificationDiv) {
             notificationDiv.style.animation = 'slideOut 0.3s ease-out';
@@ -312,7 +335,7 @@ function showNotification(message, type) {
     }, 3000);
 }
 
-// ===== MESSAGE HANDLER =====
+// ===== MESSAGE HANDLER (PERBAIKAN UTAMA) =====
 client.on("message", (topic, message) => {
     const val = message.toString();
     console.log(`Received: ${topic} = ${val}`);
@@ -327,7 +350,7 @@ client.on("message", (topic, message) => {
                     currentTempEl.innerText = temp.toFixed(1);
                 }
                 
-                // Update chart
+                // Update chart dengan timestamp yang lebih akurat
                 const now = new Date();
                 const timeLabel = now.toLocaleTimeString('id-ID', { 
                     hour: '2-digit', 
@@ -335,6 +358,7 @@ client.on("message", (topic, message) => {
                     second: '2-digit'
                 });
                 
+                // Tambahkan data ke chart
                 chart.data.labels.push(timeLabel);
                 chart.data.datasets[0].data.push(temp);
                 
@@ -344,7 +368,8 @@ client.on("message", (topic, message) => {
                     chart.data.datasets[0].data.shift();
                 }
                 
-                chart.update();
+                // Update chart
+                chart.update('active'); // Update dengan animasi lebih halus
                 
                 // Update data point counter
                 dataPointCount++;
@@ -353,7 +378,10 @@ client.on("message", (topic, message) => {
                     dataPointsEl.innerHTML = dataPointCount;
                 }
                 
-                // Check temperature range and show warning
+                // Log untuk debugging
+                console.log(`Chart updated - Temp: ${temp}°C, Data points: ${dataPointCount}`);
+                
+                // Check temperature range
                 const lowValEl = document.getElementById("lowVal");
                 const highValEl = document.getElementById("highVal");
                 
@@ -377,7 +405,7 @@ client.on("message", (topic, message) => {
             break;
             
         case "inkubator/kipas":
-            updateStatus("kipas", val, true);
+            updateStatus("kipas", val);
             break;
             
         case "inkubator/low":
@@ -466,7 +494,8 @@ function resetChart() {
             dataPointsEl.innerHTML = "0";
         }
         showNotification("Chart data reset", "success");
+        console.log("Chart reset");
     }
 }
 
-console.log("Dashboard JavaScript loaded");
+console.log("Dashboard JavaScript loaded - Kipas tidak berputar, grafik menyesuaikan suhu");
