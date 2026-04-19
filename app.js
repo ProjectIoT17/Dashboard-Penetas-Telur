@@ -195,7 +195,7 @@ function initChart() {
             scales: {
                 y: {
                     min: 25,
-                    max: 52,
+                    max: 46,
                     grid: {
                         color: 'rgba(255, 255, 255, 0.1)',
                         drawBorder: true
