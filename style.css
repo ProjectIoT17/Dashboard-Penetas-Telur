@@ -134,8 +134,10 @@ body {
 }
 
 canvas {
-    max-height: 300px;
+    max-height: 400px;
     margin: 20px 0;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
 }
 
 .chart-controls {
@@ -328,15 +330,9 @@ canvas {
     font-weight: 600;
 }
 
-/* Animations */
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-.spin {
-    animation: spin 1s linear infinite;
-    display: inline-block;
+/* No spin animation for fan */
+.status-badge.spin {
+    animation: none;
 }
 
 /* Responsive */
@@ -361,5 +357,9 @@ canvas {
     
     .temp-indicator {
         margin-top: 10px;
+    }
+    
+    canvas {
+        max-height: 300px;
     }
 }
