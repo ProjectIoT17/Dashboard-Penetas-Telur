@@ -102,7 +102,10 @@ function updateTime() {
         month: '2-digit',
         year: 'numeric'
     });
-    document.getElementById('currentTime').innerHTML = `${dateString}<br><span style="font-size: 14px; color: #a0aec0;">${timeString}</span>`;
+    const timeElement = document.getElementById('currentTime');
+    if (timeElement) {
+        timeElement.innerHTML = `${dateString}<br><span style="font-size: 14px; color: #a0aec0;">${timeString}</span>`;
+    }
 }
 
 setInterval(updateTime, 1000);
@@ -131,7 +134,10 @@ client.on("error", (err) => {
 client.on("reconnect", () => {
     console.log("Reconnecting to MQTT broker...");
     updateConnectionStatus(false);
-    document.getElementById("connectionStatus").innerHTML = "● RECONNECTING";
+    const connectionStatus = document.getElementById("connectionStatus");
+    if (connectionStatus) {
+        connectionStatus.innerHTML = "● RECONNECTING";
+    }
 });
 
 client.on("offline", () => {
@@ -142,14 +148,14 @@ client.on("offline", () => {
 // ===== UPDATE CONNECTION STATUS =====
 function updateConnectionStatus(isConnected) {
     const statusEl = document.getElementById("connectionStatus");
-    if (isConnected) {
-        statusEl.innerHTML = "● ONLINE";
-        statusEl.className = "connection-badge online";
-        document.getElementById("status").innerHTML = "Connected";
-    } else {
-        statusEl.innerHTML = "● OFFLINE";
-        statusEl.className = "connection-badge offline";
-        document.getElementById("status").innerHTML = "Disconnected";
+    if (statusEl) {
+        if (isConnected) {
+            statusEl.innerHTML = "● ONLINE";
+            statusEl.className = "connection-badge online";
+        } else {
+            statusEl.innerHTML = "● OFFLINE";
+            statusEl.className = "connection-badge offline";
+        }
     }
 }
 
@@ -185,16 +191,84 @@ function updateStatus(id, value, isFan = false) {
 
 // ===== SHOW NOTIFICATION =====
 function showNotification(message, type) {
-    const statusDiv = document.getElementById("status");
-    if (!statusDiv) return;
+    // Create or get notification element
+    let notificationDiv = document.getElementById('floatingNotification');
+    if (!notificationDiv) {
+        notificationDiv = document.createElement('div');
+        notificationDiv.id = 'floatingNotification';
+        notificationDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 10000;
+            animation: slideIn 0.3s ease-out;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        `;
+        document.body.appendChild(notificationDiv);
+        
+        // Add animation styles if not exists
+        if (!document.querySelector('#notificationStyles')) {
+            const style = document.createElement('style');
+            style.id = 'notificationStyles';
+            style.textContent = `
+                @keyframes slideIn {
+                    from {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+                @keyframes slideOut {
+                    from {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                    to {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
     
-    statusDiv.innerHTML = message;
-    statusDiv.style.color = type === "error" ? "#f87171" : "#4ade80";
+    // Set style based on type
+    if (type === "error") {
+        notificationDiv.style.background = 'rgba(239, 68, 68, 0.9)';
+        notificationDiv.style.border = '1px solid #ef4444';
+        notificationDiv.style.color = 'white';
+    } else if (type === "success") {
+        notificationDiv.style.background = 'rgba(34, 197, 94, 0.9)';
+        notificationDiv.style.border = '1px solid #22c55e';
+        notificationDiv.style.color = 'white';
+    } else {
+        notificationDiv.style.background = 'rgba(245, 158, 11, 0.9)';
+        notificationDiv.style.border = '1px solid #f59e0b';
+        notificationDiv.style.color = 'white';
+    }
     
+    notificationDiv.innerHTML = message;
+    notificationDiv.style.display = 'block';
+    
+    // Auto hide after 3 seconds
     setTimeout(() => {
-        if (statusDiv.innerHTML === message) {
-            statusDiv.innerHTML = "System Online";
-            statusDiv.style.color = "#94a3b8";
+        if (notificationDiv) {
+            notificationDiv.style.animation = 'slideOut 0.3s ease-out';
+            setTimeout(() => {
+                if (notificationDiv) {
+                    notificationDiv.style.display = 'none';
+                    notificationDiv.style.animation = '';
+                }
+            }, 300);
         }
     }, 3000);
 }
@@ -209,7 +283,10 @@ client.on("message", (topic, message) => {
             const temp = parseFloat(val);
             if (!isNaN(temp)) {
                 // Update current temperature display
-                document.getElementById("currentTemp").innerText = temp.toFixed(1);
+                const currentTempEl = document.getElementById("currentTemp");
+                if (currentTempEl) {
+                    currentTempEl.innerText = temp.toFixed(1);
+                }
                 
                 // Update chart
                 const now = new Date();
@@ -232,17 +309,25 @@ client.on("message", (topic, message) => {
                 
                 // Update data point counter
                 dataPointCount++;
-                document.getElementById("dataPoints").innerHTML = dataPointCount;
+                const dataPointsEl = document.getElementById("dataPoints");
+                if (dataPointsEl) {
+                    dataPointsEl.innerHTML = dataPointCount;
+                }
                 
                 // Check temperature range and show warning
-                const lowVal = parseFloat(document.getElementById("lowVal").innerText);
-                const highVal = parseFloat(document.getElementById("highVal").innerText);
+                const lowValEl = document.getElementById("lowVal");
+                const highValEl = document.getElementById("highVal");
                 
-                if (!isNaN(lowVal) && !isNaN(highVal)) {
-                    if (temp < lowVal) {
-                        showNotification(`⚠️ Warning: Temperature below setpoint (${temp}°C < ${lowVal}°C)`, "warning");
-                    } else if (temp > highVal) {
-                        showNotification(`⚠️ Warning: Temperature above setpoint (${temp}°C > ${highVal}°C)`, "warning");
+                if (lowValEl && highValEl) {
+                    const lowVal = parseFloat(lowValEl.innerText);
+                    const highVal = parseFloat(highValEl.innerText);
+                    
+                    if (!isNaN(lowVal) && !isNaN(highVal)) {
+                        if (temp < lowVal) {
+                            showNotification(`⚠️ Warning: Temperature below setpoint (${temp}°C < ${lowVal}°C)`, "warning");
+                        } else if (temp > highVal) {
+                            showNotification(`⚠️ Warning: Temperature above setpoint (${temp}°C > ${highVal}°C)`, "warning");
+                        }
                     }
                 }
             }
@@ -257,13 +342,19 @@ client.on("message", (topic, message) => {
             break;
             
         case "inkubator/low":
-            document.getElementById("lowVal").innerText = parseFloat(val).toFixed(1);
-            showNotification(`Setpoint LOW updated to ${val}°C`, "success");
+            const lowEl = document.getElementById("lowVal");
+            if (lowEl) {
+                lowEl.innerText = parseFloat(val).toFixed(1);
+                showNotification(`Setpoint LOW updated to ${val}°C`, "success");
+            }
             break;
             
         case "inkubator/high":
-            document.getElementById("highVal").innerText = parseFloat(val).toFixed(1);
-            showNotification(`Setpoint HIGH updated to ${val}°C`, "success");
+            const highEl = document.getElementById("highVal");
+            if (highEl) {
+                highEl.innerText = parseFloat(val).toFixed(1);
+                showNotification(`Setpoint HIGH updated to ${val}°C`, "success");
+            }
             break;
             
         default:
@@ -273,7 +364,10 @@ client.on("message", (topic, message) => {
 
 // ===== SEND COMMANDS =====
 function kirimLow() {
-    const v = document.getElementById("setLow").value;
+    const inputEl = document.getElementById("setLow");
+    if (!inputEl) return;
+    
+    const v = inputEl.value;
     if (!v || isNaN(v)) {
         showNotification("Please enter a valid temperature value", "error");
         return;
@@ -285,7 +379,7 @@ function kirimLow() {
                 showNotification("Failed to send LOW setpoint", "error");
             } else {
                 showNotification(`Sending LOW setpoint: ${v}°C`, "success");
-                document.getElementById("setLow").value = "";
+                inputEl.value = "";
             }
         });
     } else {
@@ -294,7 +388,10 @@ function kirimLow() {
 }
 
 function kirimHigh() {
-    const v = document.getElementById("setHigh").value;
+    const inputEl = document.getElementById("setHigh");
+    if (!inputEl) return;
+    
+    const v = inputEl.value;
     if (!v || isNaN(v)) {
         showNotification("Please enter a valid temperature value", "error");
         return;
@@ -306,7 +403,7 @@ function kirimHigh() {
                 showNotification("Failed to send HIGH setpoint", "error");
             } else {
                 showNotification(`Sending HIGH setpoint: ${v}°C`, "success");
-                document.getElementById("setHigh").value = "";
+                inputEl.value = "";
             }
         });
     } else {
@@ -320,12 +417,18 @@ function resetChart() {
     chart.data.datasets[0].data = [];
     chart.update();
     dataPointCount = 0;
-    document.getElementById("dataPoints").innerHTML = "0";
+    const dataPointsEl = document.getElementById("dataPoints");
+    if (dataPointsEl) {
+        dataPointsEl.innerHTML = "0";
+    }
     showNotification("Chart data reset", "success");
 }
 
 // ===== CLIENT ID DISPLAY =====
-document.getElementById("clientId").innerHTML = options.clientId;
+const clientIdEl = document.getElementById("clientId");
+if (clientIdEl) {
+    clientIdEl.innerHTML = options.clientId;
+}
 
 // ===== AUTO-RECONNECT HANDLER =====
 setInterval(() => {
