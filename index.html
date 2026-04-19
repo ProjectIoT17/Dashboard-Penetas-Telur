@@ -12,7 +12,7 @@
 <body>
 
 <div class="container">
-    <!-- Header dengan Statistik -->
+    <!-- Header -->
     <div class="header">
         <div class="title-section">
             <h1>🥚 SMART INCUBATOR PRO</h1>
@@ -24,7 +24,7 @@
         </div>
     </div>
 
-    <!-- Main Temperature Card -->
+    <!-- Temperature Card -->
     <div class="card big temp-card">
         <div class="card-header">
             <h2>🌡️ Temperature Monitoring</h2>
@@ -33,7 +33,9 @@
                 <span class="temp-unit">°C</span>
             </div>
         </div>
-        <canvas id="tempChart"></canvas>
+        <div class="chart-container">
+            <canvas id="tempChart"></canvas>
+        </div>
         <div class="chart-controls">
             <button onclick="resetChart()" class="btn-secondary">Reset Chart</button>
         </div>
@@ -45,9 +47,7 @@
             <div class="status-icon">💡</div>
             <div class="status-info">
                 <h3>Lampu Pemanas</h3>
-                <div id="lampu" class="status-badge off">
-                    OFF
-                </div>
+                <div id="lampu" class="status-badge off">OFF</div>
             </div>
         </div>
 
@@ -55,9 +55,7 @@
             <div class="status-icon">🌀</div>
             <div class="status-info">
                 <h3>Kipas Sirkulasi</h3>
-                <div id="kipas" class="status-badge off">
-                    OFF
-                </div>
+                <div id="kipas" class="status-badge off">OFF</div>
             </div>
         </div>
 
