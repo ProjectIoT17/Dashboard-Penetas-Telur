@@ -109,6 +109,59 @@ body {
     color: #e2e8f0;
 }
 
+/* Mode Card */
+.mode-card {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(124, 58, 237, 0.1));
+}
+
+.mode-toggle-container {
+    display: flex;
+    gap: 10px;
+}
+
+.mode-btn {
+    padding: 10px 24px;
+    border: 2px solid rgba(139, 92, 246, 0.5);
+    background: transparent;
+    color: #cbd5e1;
+    border-radius: 40px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.mode-btn.active {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    border-color: #8b5cf6;
+    color: white;
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+}
+
+.mode-display {
+    text-align: center;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.mode-status {
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-left: 10px;
+}
+
+.mode-status.auto {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+}
+
+.mode-status.manual {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+}
+
 /* Temperature Card */
 .temp-card {
     height: auto;
@@ -135,7 +188,7 @@ body {
     color: #94a3b8;
 }
 
-/* CHART CONTAINER - PENTING */
+/* CHART CONTAINER */
 .chart-container {
     position: relative;
     width: 100%;
@@ -187,7 +240,6 @@ body {
     margin-bottom: 8px;
 }
 
-/* STATUS BADGE - TIDAK ADA ANIMASI */
 .status-badge {
     display: inline-block;
     padding: 8px 20px;
@@ -211,13 +263,6 @@ body {
     color: white;
 }
 
-/* PASTIKAN TIDAK ADA ANIMASI UNTUK KIPAS */
-.status-badge.spin,
-#kipas.spin {
-    animation: none !important;
-    display: inline-block;
-}
-
 .setpoint-value {
     font-size: 28px;
     font-weight: 700;
@@ -229,6 +274,66 @@ body {
 .unit {
     font-size: 14px;
     color: #94a3b8;
+}
+
+/* Manual Control Card */
+.manual-control-card {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.manual-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+}
+
+.manual-btn {
+    padding: 15px 20px;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.lamp-on {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+}
+
+.lamp-on:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(245, 158, 11, 0.4);
+}
+
+.lamp-off {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    color: white;
+}
+
+.lamp-off:hover {
+    transform: translateY(-2px);
+}
+
+.fan-on {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+}
+
+.fan-on:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+}
+
+.fan-off {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    color: white;
+}
+
+.fan-off:hover {
+    transform: translateY(-2px);
 }
 
 /* Control Panel */
@@ -351,12 +456,6 @@ body {
     font-weight: 600;
 }
 
-/* Hapus semua animasi spin */
-@keyframes none {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(0deg); }
-}
-
 /* Responsive */
 @media (max-width: 768px) {
     .header {
@@ -387,5 +486,9 @@ body {
     
     #tempChart {
         height: 300px !important;
+    }
+    
+    .manual-buttons {
+        grid-template-columns: 1fr 1fr;
     }
 }
