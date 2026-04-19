@@ -17,6 +17,7 @@ const client = mqtt.connect(
 let chart;
 let dataPointCount = 0;
 let temperatureHistory = [];
+let currentMode = "AUTO";
 
 // ===== WAIT FOR DOM TO LOAD =====
 document.addEventListener('DOMContentLoaded', function() {
@@ -37,6 +38,28 @@ document.addEventListener('DOMContentLoaded', function() {
         clientIdEl.innerHTML = options.clientId;
     }
     
+    // Mode buttons
+    const autoBtn = document.getElementById("autoModeBtn");
+    const manualBtn = document.getElementById("manualModeBtn");
+    
+    if (autoBtn) {
+        autoBtn.addEventListener("click", () => setMode("AUTO"));
+    }
+    if (manualBtn) {
+        manualBtn.addEventListener("click", () => setMode("MANUAL"));
+    }
+    
+    // Manual control buttons
+    const lampOnBtn = document.getElementById("lampOnBtn");
+    const lampOffBtn = document.getElementById("lampOffBtn");
+    const fanOnBtn = document.getElementById("fanOnBtn");
+    const fanOffBtn = document.getElementById("fanOffBtn");
+    
+    if (lampOnBtn) lampOnBtn.addEventListener("click", () => sendManualCommand("lamp", "ON"));
+    if (lampOffBtn) lampOffBtn.addEventListener("click", () => sendManualCommand("lamp", "OFF"));
+    if (fanOnBtn) fanOnBtn.addEventListener("click", () => sendManualCommand("fan", "ON"));
+    if (fanOffBtn) fanOffBtn.addEventListener("click", () => sendManualCommand("fan", "OFF"));
+    
     // Auto-reconnect handler
     setInterval(() => {
         if (!client.connected) {
@@ -46,7 +69,71 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 30000);
 });
 
-// ===== CHART INITIALIZATION WITH NEW RANGE (25°C - 50°C) =====
+// ===== SET MODE =====
+function setMode(mode) {
+    if (client.connected) {
+        client.publish("inkubator/mode", mode, (err) => {
+            if (err) {
+                showNotification("Failed to change mode", "error");
+            } else {
+                showNotification(`Mode changed to ${mode}`, "success");
+                updateModeUI(mode);
+            }
+        });
+    } else {
+        showNotification("MQTT not connected", "error");
+    }
+}
+
+// ===== UPDATE MODE UI =====
+function updateModeUI(mode) {
+    currentMode = mode;
+    const modeStatus = document.getElementById("modeStatus");
+    const autoBtn = document.getElementById("autoModeBtn");
+    const manualBtn = document.getElementById("manualModeBtn");
+    const manualPanel = document.getElementById("manualPanel");
+    
+    if (modeStatus) {
+        modeStatus.textContent = mode;
+        modeStatus.className = `mode-status ${mode.toLowerCase()}`;
+    }
+    
+    if (autoBtn && manualBtn) {
+        if (mode === "AUTO") {
+            autoBtn.classList.add("active");
+            manualBtn.classList.remove("active");
+            if (manualPanel) manualPanel.style.display = "none";
+        } else {
+            manualBtn.classList.add("active");
+            autoBtn.classList.remove("active");
+            if (manualPanel) manualPanel.style.display = "block";
+        }
+    }
+}
+
+// ===== SEND MANUAL COMMAND =====
+function sendManualCommand(device, state) {
+    if (!client.connected) {
+        showNotification("MQTT not connected", "error");
+        return;
+    }
+    
+    if (currentMode !== "MANUAL") {
+        showNotification("Please switch to MANUAL mode first", "error");
+        return;
+    }
+    
+    const topic = `inkubator/manual/${device}`;
+    client.publish(topic, state, (err) => {
+        if (err) {
+            showNotification(`Failed to control ${device}`, "error");
+        } else {
+            showNotification(`${device.toUpperCase()} turned ${state}`, "success");
+        }
+    });
+}
+
+// ===== CHART INITIALIZATION =====
 function initChart() {
     const canvas = document.getElementById('tempChart');
     if (!canvas) {
@@ -54,7 +141,6 @@ function initChart() {
         return;
     }
     
-    // Get canvas context
     const ctx = canvas.getContext('2d');
     
     chart = new Chart(ctx, {
@@ -108,15 +194,15 @@ function initChart() {
             },
             scales: {
                 y: {
-                    min: 25,  // Batas bawah 25°C
-                    max: 52,  // Batas atas 50°C
+                    min: 25,
+                    max: 52,
                     grid: {
                         color: 'rgba(255, 255, 255, 0.1)',
                         drawBorder: true
                     },
                     ticks: {
                         color: '#e2e8f0',
-                        stepSize: 3,  // Step 3°C: 25, 28, 31, 34, 37, 40, 43, 46, 49, 52
+                        stepSize: 3,
                         callback: function(value) {
                             return value + '°C';
                         }
@@ -171,34 +257,7 @@ function initChart() {
         }
     });
     
-    console.log("Chart initialized successfully with range 25°C - 50°C");
-    
-    // Add sample data to test chart
-    addSampleData();
-}
-
-// Add sample data for testing
-function addSampleData() {
-    if (!chart) return;
-    
-    // Add some initial sample data points
-    const now = new Date();
-    for (let i = 0; i < 5; i++) {
-        const time = new Date(now.getTime() - (5 - i) * 3000);
-        const timeLabel = time.toLocaleTimeString('id-ID', { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            second: '2-digit'
-        });
-        chart.data.labels.push(timeLabel);
-        chart.data.datasets[0].data.push(37.5); // Sample temperature
-    }
-    chart.update();
-    dataPointCount = 5;
-    const dataPointsEl = document.getElementById("dataPoints");
-    if (dataPointsEl) {
-        dataPointsEl.innerHTML = dataPointCount;
-    }
+    console.log("Chart initialized successfully");
 }
 
 // ===== TIME UPDATE =====
@@ -225,7 +284,6 @@ client.on("connect", () => {
     console.log("Connected to MQTT broker");
     updateConnectionStatus(true);
     
-    // Subscribe to all incubator topics
     client.subscribe("inkubator/#", (err) => {
         if (!err) {
             console.log("Subscribed to inkubator/#");
@@ -271,7 +329,7 @@ function updateConnectionStatus(isConnected) {
     }
 }
 
-// ===== UPDATE DEVICE STATUS (NO SPIN ANIMATION) =====
+// ===== UPDATE DEVICE STATUS =====
 function updateStatus(id, value) {
     const el = document.getElementById(id);
     if (!el) {
@@ -279,22 +337,13 @@ function updateStatus(id, value) {
         return;
     }
 
-    // Normalize value
     let status = value.toString().toUpperCase();
     if (status === "1") status = "ON";
     if (status === "0") status = "OFF";
     
     el.innerText = status;
-    
-    // Remove any existing classes
-    el.classList.remove("on", "off", "spin");
-    
-    // Add appropriate class
-    if (status === "ON") {
-        el.classList.add("on");
-    } else {
-        el.classList.add("off");
-    }
+    el.classList.remove("on", "off");
+    el.classList.add(status === "ON" ? "on" : "off");
     
     console.log(`Status updated: ${id} = ${status}`);
 }
@@ -388,13 +437,11 @@ client.on("message", (topic, message) => {
         case "inkubator/suhu":
             const temp = parseFloat(val);
             if (!isNaN(temp) && chart) {
-                // Update current temperature display
                 const currentTempEl = document.getElementById("currentTemp");
                 if (currentTempEl) {
                     currentTempEl.innerText = temp.toFixed(1);
                 }
                 
-                // Update chart with timestamp
                 const now = new Date();
                 const timeLabel = now.toLocaleTimeString('id-ID', { 
                     hour: '2-digit', 
@@ -402,43 +449,20 @@ client.on("message", (topic, message) => {
                     second: '2-digit'
                 });
                 
-                // Add data to chart
                 chart.data.labels.push(timeLabel);
                 chart.data.datasets[0].data.push(temp);
                 
-                // Keep last 30 data points
                 if (chart.data.labels.length > 30) {
                     chart.data.labels.shift();
                     chart.data.datasets[0].data.shift();
                 }
                 
-                // Update chart
                 chart.update();
                 
-                // Update data point counter
                 dataPointCount++;
                 const dataPointsEl = document.getElementById("dataPoints");
                 if (dataPointsEl) {
                     dataPointsEl.innerHTML = dataPointCount;
-                }
-                
-                console.log(`Chart updated - Temp: ${temp}°C, Points: ${dataPointCount}`);
-                
-                // Check temperature range
-                const lowValEl = document.getElementById("lowVal");
-                const highValEl = document.getElementById("highVal");
-                
-                if (lowValEl && highValEl) {
-                    const lowVal = parseFloat(lowValEl.innerText);
-                    const highVal = parseFloat(highValEl.innerText);
-                    
-                    if (!isNaN(lowVal) && !isNaN(highVal)) {
-                        if (temp < lowVal) {
-                            showNotification(`⚠️ Warning: Temperature below setpoint (${temp}°C < ${lowVal}°C)`, "warning");
-                        } else if (temp > highVal) {
-                            showNotification(`⚠️ Warning: Temperature above setpoint (${temp}°C > ${highVal}°C)`, "warning");
-                        }
-                    }
                 }
             }
             break;
@@ -467,6 +491,10 @@ client.on("message", (topic, message) => {
                 highEl.innerText = numVal;
                 showNotification(`Setpoint HIGH updated to ${numVal}°C`, "success");
             }
+            break;
+            
+        case "inkubator/mode":
+            updateModeUI(val);
             break;
             
         default:
@@ -541,4 +569,4 @@ function resetChart() {
     }
 }
 
-console.log("Dashboard JavaScript loaded - Chart range: 25°C to 50°C");
+console.log("Dashboard JavaScript loaded");
