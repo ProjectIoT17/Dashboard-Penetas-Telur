@@ -99,6 +99,8 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
 .card-header h2 {
@@ -133,16 +135,26 @@ body {
     color: #94a3b8;
 }
 
-canvas {
-    max-height: 400px;
+/* CHART CONTAINER - PENTING */
+.chart-container {
+    position: relative;
+    width: 100%;
+    min-height: 400px;
     margin: 20px 0;
+}
+
+#tempChart {
+    width: 100% !important;
+    height: 400px !important;
     background: rgba(0, 0, 0, 0.2);
     border-radius: 12px;
+    padding: 10px;
 }
 
 .chart-controls {
     display: flex;
     justify-content: flex-end;
+    margin-top: 10px;
 }
 
 /* Grid Layout */
@@ -175,14 +187,16 @@ canvas {
     margin-bottom: 8px;
 }
 
+/* STATUS BADGE - TIDAK ADA ANIMASI */
 .status-badge {
     display: inline-block;
-    padding: 6px 16px;
-    border-radius: 20px;
+    padding: 8px 20px;
+    border-radius: 30px;
     font-weight: 700;
-    font-size: 14px;
+    font-size: 16px;
     text-align: center;
     transition: all 0.3s ease;
+    min-width: 80px;
 }
 
 .status-badge.on {
@@ -195,6 +209,13 @@ canvas {
     background: linear-gradient(135deg, #ef4444, #dc2626);
     box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
     color: white;
+}
+
+/* PASTIKAN TIDAK ADA ANIMASI UNTUK KIPAS */
+.status-badge.spin,
+#kipas.spin {
+    animation: none !important;
+    display: inline-block;
 }
 
 .setpoint-value {
@@ -330,9 +351,10 @@ canvas {
     font-weight: 600;
 }
 
-/* No spin animation for fan */
-.status-badge.spin {
-    animation: none;
+/* Hapus semua animasi spin */
+@keyframes none {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(0deg); }
 }
 
 /* Responsive */
@@ -359,7 +381,11 @@ canvas {
         margin-top: 10px;
     }
     
-    canvas {
-        max-height: 300px;
+    .chart-container {
+        min-height: 300px;
+    }
+    
+    #tempChart {
+        height: 300px !important;
     }
 }
