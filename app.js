@@ -13,79 +13,120 @@ const client = mqtt.connect(
     options
 );
 
-// ===== CHART CONFIGURATION =====
-const ctx = document.getElementById('tempChart');
-const chart = new Chart(ctx, {
-    type: 'line',
-    data: {
-        labels: [],
-        datasets: [{
-            label: 'Temperature (°C)',
-            data: [],
-            borderColor: '#f59e0b',
-            backgroundColor: 'rgba(245, 158, 11, 0.1)',
-            borderWidth: 3,
-            tension: 0.4,
-            fill: true,
-            pointBackgroundColor: '#f59e0b',
-            pointBorderColor: '#fff',
-            pointBorderWidth: 2,
-            pointRadius: 4,
-            pointHoverRadius: 6,
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-            legend: {
-                labels: {
-                    color: '#e2e8f0',
-                    font: {
-                        size: 12,
-                        weight: 'bold'
-                    }
-                }
-            },
-            tooltip: {
-                mode: 'index',
-                intersect: false,
-                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                titleColor: '#f59e0b',
-                bodyColor: '#e2e8f0',
-                borderColor: '#f59e0b',
-                borderWidth: 1
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: false,
-                grid: {
-                    color: 'rgba(255, 255, 255, 0.1)'
-                },
-                ticks: {
-                    color: '#e2e8f0',
-                    callback: function(value) {
-                        return value + '°C';
-                    }
-                }
-            },
-            x: {
-                grid: {
-                    color: 'rgba(255, 255, 255, 0.05)'
-                },
-                ticks: {
-                    color: '#e2e8f0'
-                }
-            }
-        },
-        interaction: {
-            mode: 'nearest',
-            axis: 'x',
-            intersect: false
-        }
+// ===== WAIT FOR DOM TO LOAD =====
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM loaded, initializing dashboard...");
+    
+    // Initialize chart
+    initChart();
+    
+    // Initialize time
+    updateTime();
+    setInterval(updateTime, 1000);
+    
+    // Set client ID
+    const clientIdEl = document.getElementById("clientId");
+    if (clientIdEl) {
+        clientIdEl.innerHTML = options.clientId;
     }
+    
+    // Auto-reconnect handler
+    setInterval(() => {
+        if (!client.connected) {
+            console.log("Attempting to reconnect...");
+            client.reconnect();
+        }
+    }, 30000);
 });
+
+// ===== CHART CONFIGURATION =====
+let chart;
+
+function initChart() {
+    const ctx = document.getElementById('tempChart');
+    if (!ctx) {
+        console.error("Chart canvas not found");
+        return;
+    }
+    
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Temperature (°C)',
+                data: [],
+                borderColor: '#f59e0b',
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#f59e0b',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#e2e8f0',
+                        font: {
+                            size: 12,
+                            weight: 'bold'
+                        }
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: '#f59e0b',
+                    bodyColor: '#e2e8f0',
+                    borderColor: '#f59e0b',
+                    borderWidth: 1
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    min: 30,
+                    max: 45,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#e2e8f0',
+                        callback: function(value) {
+                            return value + '°C';
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    },
+                    ticks: {
+                        color: '#e2e8f0',
+                        maxRotation: 45,
+                        minRotation: 45
+                    }
+                }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            }
+        }
+    });
+    
+    console.log("Chart initialized");
+}
 
 let dataPointCount = 0;
 
@@ -108,9 +149,6 @@ function updateTime() {
     }
 }
 
-setInterval(updateTime, 1000);
-updateTime();
-
 // ===== MQTT CONNECTION HANDLER =====
 client.on("connect", () => {
     console.log("Connected to MQTT broker");
@@ -121,6 +159,8 @@ client.on("connect", () => {
         if (!err) {
             console.log("Subscribed to inkubator/#");
             showNotification("Connected to MQTT Broker", "success");
+        } else {
+            console.error("Subscription error:", err);
         }
     });
 });
@@ -137,6 +177,7 @@ client.on("reconnect", () => {
     const connectionStatus = document.getElementById("connectionStatus");
     if (connectionStatus) {
         connectionStatus.innerHTML = "● RECONNECTING";
+        connectionStatus.className = "connection-badge offline";
     }
 });
 
@@ -162,7 +203,10 @@ function updateConnectionStatus(isConnected) {
 // ===== UPDATE DEVICE STATUS =====
 function updateStatus(id, value, isFan = false) {
     const el = document.getElementById(id);
-    if (!el) return;
+    if (!el) {
+        console.warn(`Element ${id} not found`);
+        return;
+    }
 
     el.innerText = value;
     
@@ -173,9 +217,6 @@ function updateStatus(id, value, isFan = false) {
         // Add animation for fan
         if (isFan && id === "kipas") {
             el.classList.add("spin");
-            // Add visual feedback for fan
-            const fanIcon = document.querySelector('.status-icon');
-            if (fanIcon) fanIcon.style.animation = 'spin 1s linear infinite';
         }
     } else {
         el.classList.add("off");
@@ -183,8 +224,6 @@ function updateStatus(id, value, isFan = false) {
         
         if (isFan && id === "kipas") {
             el.classList.remove("spin");
-            const fanIcon = document.querySelector('.status-icon');
-            if (fanIcon) fanIcon.style.animation = 'none';
         }
     }
 }
@@ -243,15 +282,15 @@ function showNotification(message, type) {
     
     // Set style based on type
     if (type === "error") {
-        notificationDiv.style.background = 'rgba(239, 68, 68, 0.9)';
+        notificationDiv.style.background = 'rgba(239, 68, 68, 0.95)';
         notificationDiv.style.border = '1px solid #ef4444';
         notificationDiv.style.color = 'white';
     } else if (type === "success") {
-        notificationDiv.style.background = 'rgba(34, 197, 94, 0.9)';
+        notificationDiv.style.background = 'rgba(34, 197, 94, 0.95)';
         notificationDiv.style.border = '1px solid #22c55e';
         notificationDiv.style.color = 'white';
     } else {
-        notificationDiv.style.background = 'rgba(245, 158, 11, 0.9)';
+        notificationDiv.style.background = 'rgba(245, 158, 11, 0.95)';
         notificationDiv.style.border = '1px solid #f59e0b';
         notificationDiv.style.color = 'white';
     }
@@ -281,7 +320,7 @@ client.on("message", (topic, message) => {
     switch(topic) {
         case "inkubator/suhu":
             const temp = parseFloat(val);
-            if (!isNaN(temp)) {
+            if (!isNaN(temp) && chart) {
                 // Update current temperature display
                 const currentTempEl = document.getElementById("currentTemp");
                 if (currentTempEl) {
@@ -344,16 +383,18 @@ client.on("message", (topic, message) => {
         case "inkubator/low":
             const lowEl = document.getElementById("lowVal");
             if (lowEl) {
-                lowEl.innerText = parseFloat(val).toFixed(1);
-                showNotification(`Setpoint LOW updated to ${val}°C`, "success");
+                const numVal = parseFloat(val).toFixed(1);
+                lowEl.innerText = numVal;
+                showNotification(`Setpoint LOW updated to ${numVal}°C`, "success");
             }
             break;
             
         case "inkubator/high":
             const highEl = document.getElementById("highVal");
             if (highEl) {
-                highEl.innerText = parseFloat(val).toFixed(1);
-                showNotification(`Setpoint HIGH updated to ${val}°C`, "success");
+                const numVal = parseFloat(val).toFixed(1);
+                highEl.innerText = numVal;
+                showNotification(`Setpoint HIGH updated to ${numVal}°C`, "success");
             }
             break;
             
@@ -377,6 +418,7 @@ function kirimLow() {
         client.publish("inkubator/set/low", v.toString(), (err) => {
             if (err) {
                 showNotification("Failed to send LOW setpoint", "error");
+                console.error("Publish error:", err);
             } else {
                 showNotification(`Sending LOW setpoint: ${v}°C`, "success");
                 inputEl.value = "";
@@ -401,6 +443,7 @@ function kirimHigh() {
         client.publish("inkubator/set/high", v.toString(), (err) => {
             if (err) {
                 showNotification("Failed to send HIGH setpoint", "error");
+                console.error("Publish error:", err);
             } else {
                 showNotification(`Sending HIGH setpoint: ${v}°C`, "success");
                 inputEl.value = "";
@@ -413,29 +456,17 @@ function kirimHigh() {
 
 // ===== RESET CHART =====
 function resetChart() {
-    chart.data.labels = [];
-    chart.data.datasets[0].data = [];
-    chart.update();
-    dataPointCount = 0;
-    const dataPointsEl = document.getElementById("dataPoints");
-    if (dataPointsEl) {
-        dataPointsEl.innerHTML = "0";
+    if (chart) {
+        chart.data.labels = [];
+        chart.data.datasets[0].data = [];
+        chart.update();
+        dataPointCount = 0;
+        const dataPointsEl = document.getElementById("dataPoints");
+        if (dataPointsEl) {
+            dataPointsEl.innerHTML = "0";
+        }
+        showNotification("Chart data reset", "success");
     }
-    showNotification("Chart data reset", "success");
 }
 
-// ===== CLIENT ID DISPLAY =====
-const clientIdEl = document.getElementById("clientId");
-if (clientIdEl) {
-    clientIdEl.innerHTML = options.clientId;
-}
-
-// ===== AUTO-RECONNECT HANDLER =====
-setInterval(() => {
-    if (!client.connected) {
-        console.log("Attempting to reconnect...");
-        client.reconnect();
-    }
-}, 30000);
-
-console.log("Dashboard initialized successfully");
+console.log("Dashboard JavaScript loaded");
