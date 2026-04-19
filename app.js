@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 30000);
 });
 
-// ===== CHART INITIALIZATION =====
+// ===== CHART INITIALIZATION WITH NEW RANGE (25°C - 50°C) =====
 function initChart() {
     const canvas = document.getElementById('tempChart');
     if (!canvas) {
@@ -108,15 +108,15 @@ function initChart() {
             },
             scales: {
                 y: {
-                    min: 30,
-                    max: 45,
+                    min: 25,  // Batas bawah 25°C
+                    max: 52,  // Batas atas 50°C
                     grid: {
                         color: 'rgba(255, 255, 255, 0.1)',
                         drawBorder: true
                     },
                     ticks: {
                         color: '#e2e8f0',
-                        stepSize: 2,
+                        stepSize: 3,  // Step 3°C: 25, 28, 31, 34, 37, 40, 43, 46, 49, 52
                         callback: function(value) {
                             return value + '°C';
                         }
@@ -171,7 +171,7 @@ function initChart() {
         }
     });
     
-    console.log("Chart initialized successfully");
+    console.log("Chart initialized successfully with range 25°C - 50°C");
     
     // Add sample data to test chart
     addSampleData();
@@ -191,7 +191,7 @@ function addSampleData() {
             second: '2-digit'
         });
         chart.data.labels.push(timeLabel);
-        chart.data.datasets[0].data.push(36.5);
+        chart.data.datasets[0].data.push(37.5); // Sample temperature
     }
     chart.update();
     dataPointCount = 5;
@@ -541,4 +541,4 @@ function resetChart() {
     }
 }
 
-console.log("Dashboard JavaScript loaded - Kipas tidak berputar, chart siap menampilkan data");
+console.log("Dashboard JavaScript loaded - Chart range: 25°C to 50°C");
