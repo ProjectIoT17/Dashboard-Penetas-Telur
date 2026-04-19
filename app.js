@@ -13,12 +13,19 @@ const client = mqtt.connect(
     options
 );
 
+// ===== GLOBAL VARIABLES =====
+let chart;
+let dataPointCount = 0;
+let temperatureHistory = [];
+
 // ===== WAIT FOR DOM TO LOAD =====
 document.addEventListener('DOMContentLoaded', function() {
     console.log("DOM loaded, initializing dashboard...");
     
-    // Initialize chart
-    initChart();
+    // Initialize chart with delay to ensure canvas is ready
+    setTimeout(() => {
+        initChart();
+    }, 100);
     
     // Initialize time
     updateTime();
@@ -39,16 +46,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 30000);
 });
 
-// ===== CHART CONFIGURATION =====
-let chart;
-let chartData = []; // Store data for better management
-
+// ===== CHART INITIALIZATION =====
 function initChart() {
-    const ctx = document.getElementById('tempChart');
-    if (!ctx) {
-        console.error("Chart canvas not found");
+    const canvas = document.getElementById('tempChart');
+    if (!canvas) {
+        console.error("Chart canvas not found!");
         return;
     }
+    
+    // Get canvas context
+    const ctx = canvas.getContext('2d');
     
     chart = new Chart(ctx, {
         type: 'line',
@@ -63,10 +70,11 @@ function initChart() {
                 tension: 0.4,
                 fill: true,
                 pointBackgroundColor: '#f59e0b',
-                pointBorderColor: '#fff',
+                pointBorderColor: '#ffffff',
                 pointBorderWidth: 2,
                 pointRadius: 5,
-                pointHoverRadius: 7,
+                pointHoverRadius: 8,
+                pointStyle: 'circle'
             }]
         },
         options: {
@@ -80,7 +88,8 @@ function initChart() {
                             size: 12,
                             weight: 'bold'
                         }
-                    }
+                    },
+                    position: 'top'
                 },
                 tooltip: {
                     mode: 'index',
@@ -102,7 +111,8 @@ function initChart() {
                     min: 30,
                     max: 45,
                     grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
+                        color: 'rgba(255, 255, 255, 0.1)',
+                        drawBorder: true
                     },
                     ticks: {
                         color: '#e2e8f0',
@@ -116,27 +126,30 @@ function initChart() {
                         text: 'Temperature (°C)',
                         color: '#94a3b8',
                         font: {
-                            size: 12
+                            size: 12,
+                            weight: 'bold'
                         }
                     }
                 },
                 x: {
                     grid: {
-                        color: 'rgba(255, 255, 255, 0.05)'
+                        color: 'rgba(255, 255, 255, 0.05)',
+                        display: true
                     },
                     ticks: {
                         color: '#e2e8f0',
                         maxRotation: 45,
                         minRotation: 45,
                         autoSkip: true,
-                        maxTicksLimit: 10
+                        maxTicksLimit: 8
                     },
                     title: {
                         display: true,
                         text: 'Time',
                         color: '#94a3b8',
                         font: {
-                            size: 12
+                            size: 12,
+                            weight: 'bold'
                         }
                     }
                 }
@@ -147,15 +160,46 @@ function initChart() {
                 intersect: false
             },
             animation: {
-                duration: 500
+                duration: 500,
+                easing: 'easeInOutQuart'
+            },
+            elements: {
+                line: {
+                    borderJoin: 'round'
+                }
             }
         }
     });
     
-    console.log("Chart initialized");
+    console.log("Chart initialized successfully");
+    
+    // Add sample data to test chart
+    addSampleData();
 }
 
-let dataPointCount = 0;
+// Add sample data for testing
+function addSampleData() {
+    if (!chart) return;
+    
+    // Add some initial sample data points
+    const now = new Date();
+    for (let i = 0; i < 5; i++) {
+        const time = new Date(now.getTime() - (5 - i) * 3000);
+        const timeLabel = time.toLocaleTimeString('id-ID', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        chart.data.labels.push(timeLabel);
+        chart.data.datasets[0].data.push(36.5);
+    }
+    chart.update();
+    dataPointCount = 5;
+    const dataPointsEl = document.getElementById("dataPoints");
+    if (dataPointsEl) {
+        dataPointsEl.innerHTML = dataPointCount;
+    }
+}
 
 // ===== TIME UPDATE =====
 function updateTime() {
@@ -227,7 +271,7 @@ function updateConnectionStatus(isConnected) {
     }
 }
 
-// ===== UPDATE DEVICE STATUS (TANPA ANIMASI SPIN) =====
+// ===== UPDATE DEVICE STATUS (NO SPIN ANIMATION) =====
 function updateStatus(id, value) {
     const el = document.getElementById(id);
     if (!el) {
@@ -235,24 +279,24 @@ function updateStatus(id, value) {
         return;
     }
 
-    // Normalisasi nilai
+    // Normalize value
     let status = value.toString().toUpperCase();
     if (status === "1") status = "ON";
     if (status === "0") status = "OFF";
     
     el.innerText = status;
     
+    // Remove any existing classes
+    el.classList.remove("on", "off", "spin");
+    
+    // Add appropriate class
     if (status === "ON") {
         el.classList.add("on");
-        el.classList.remove("off");
-        // HAPUS class spin jika ada (untuk kipas)
-        el.classList.remove("spin");
     } else {
         el.classList.add("off");
-        el.classList.remove("on");
-        // HAPUS class spin jika ada
-        el.classList.remove("spin");
     }
+    
+    console.log(`Status updated: ${id} = ${status}`);
 }
 
 // ===== SHOW NOTIFICATION =====
@@ -335,7 +379,7 @@ function showNotification(message, type) {
     }, 3000);
 }
 
-// ===== MESSAGE HANDLER (PERBAIKAN UTAMA) =====
+// ===== MESSAGE HANDLER =====
 client.on("message", (topic, message) => {
     const val = message.toString();
     console.log(`Received: ${topic} = ${val}`);
@@ -350,7 +394,7 @@ client.on("message", (topic, message) => {
                     currentTempEl.innerText = temp.toFixed(1);
                 }
                 
-                // Update chart dengan timestamp yang lebih akurat
+                // Update chart with timestamp
                 const now = new Date();
                 const timeLabel = now.toLocaleTimeString('id-ID', { 
                     hour: '2-digit', 
@@ -358,7 +402,7 @@ client.on("message", (topic, message) => {
                     second: '2-digit'
                 });
                 
-                // Tambahkan data ke chart
+                // Add data to chart
                 chart.data.labels.push(timeLabel);
                 chart.data.datasets[0].data.push(temp);
                 
@@ -369,7 +413,7 @@ client.on("message", (topic, message) => {
                 }
                 
                 // Update chart
-                chart.update('active'); // Update dengan animasi lebih halus
+                chart.update();
                 
                 // Update data point counter
                 dataPointCount++;
@@ -378,8 +422,7 @@ client.on("message", (topic, message) => {
                     dataPointsEl.innerHTML = dataPointCount;
                 }
                 
-                // Log untuk debugging
-                console.log(`Chart updated - Temp: ${temp}°C, Data points: ${dataPointCount}`);
+                console.log(`Chart updated - Temp: ${temp}°C, Points: ${dataPointCount}`);
                 
                 // Check temperature range
                 const lowValEl = document.getElementById("lowVal");
@@ -498,4 +541,4 @@ function resetChart() {
     }
 }
 
-console.log("Dashboard JavaScript loaded - Kipas tidak berputar, grafik menyesuaikan suhu");
+console.log("Dashboard JavaScript loaded - Kipas tidak berputar, chart siap menampilkan data");
