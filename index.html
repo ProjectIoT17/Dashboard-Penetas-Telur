@@ -24,6 +24,20 @@
         </div>
     </div>
 
+    <!-- Mode Control Card -->
+    <div class="card mode-card">
+        <div class="card-header">
+            <h2>🎮 Control Mode</h2>
+            <div class="mode-toggle-container">
+                <button id="autoModeBtn" class="mode-btn active">AUTO MODE</button>
+                <button id="manualModeBtn" class="mode-btn">MANUAL MODE</button>
+            </div>
+        </div>
+        <div id="currentModeDisplay" class="mode-display">
+            Current Mode: <span id="modeStatus" class="mode-status auto">AUTO</span>
+        </div>
+    </div>
+
     <!-- Temperature Card -->
     <div class="card big temp-card">
         <div class="card-header">
@@ -78,11 +92,25 @@
         </div>
     </div>
 
+    <!-- Manual Control Panel (only visible in MANUAL mode) -->
+    <div id="manualPanel" class="card manual-control-card" style="display: none;">
+        <div class="card-header">
+            <h2>🕹️ Manual Control Panel</h2>
+            <span class="control-badge">Manual Override Active</span>
+        </div>
+        <div class="manual-buttons">
+            <button id="lampOnBtn" class="manual-btn lamp-on">💡 Lampu ON</button>
+            <button id="lampOffBtn" class="manual-btn lamp-off">💡 Lampu OFF</button>
+            <button id="fanOnBtn" class="manual-btn fan-on">🌀 Kipas ON</button>
+            <button id="fanOffBtn" class="manual-btn fan-off">🌀 Kipas OFF</button>
+        </div>
+    </div>
+
     <!-- Control Panel -->
     <div class="card control-card">
         <div class="card-header">
-            <h2>🎮 Control Panel</h2>
-            <span class="control-badge">Manual Override</span>
+            <h2>⚙️ Setpoint Control</h2>
+            <span class="control-badge">Temperature Settings</span>
         </div>
         
         <div class="control-group">
