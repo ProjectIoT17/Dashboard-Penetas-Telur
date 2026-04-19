@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Incubator Pro Dashboard</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="container">
+    <!-- Header dengan Statistik -->
+    <div class="header">
+        <div class="title-section">
+            <h1>🥚 SMART INCUBATOR PRO</h1>
+            <p class="subtitle">Real-time Monitoring & Control System</p>
+        </div>
+        <div class="time-section">
+            <div id="currentTime" class="time-display"></div>
+            <div id="connectionStatus" class="connection-badge offline">● OFFLINE</div>
+        </div>
+    </div>
+
+    <!-- Main Temperature Card -->
+    <div class="card big temp-card">
+        <div class="card-header">
+            <h2>🌡️ Temperature Monitoring</h2>
+            <div class="temp-indicator">
+                <span id="currentTemp" class="current-temp-value">--</span>
+                <span class="temp-unit">°C</span>
+            </div>
+        </div>
+        <canvas id="tempChart"></canvas>
+        <div class="chart-controls">
+            <button onclick="resetChart()" class="btn-secondary">Reset Chart</button>
+        </div>
+    </div>
+
+    <!-- Status Grid -->
+    <div class="grid status-grid">
+        <div class="card status-card">
+            <div class="status-icon">💡</div>
+            <div class="status-info">
+                <h3>Lampu Pemanas</h3>
+                <div id="lampu" class="status-badge off">
+                    OFF
+                </div>
+            </div>
+        </div>
+
+        <div class="card status-card">
+            <div class="status-icon">🌀</div>
+            <div class="status-info">
+                <h3>Kipas Sirkulasi</h3>
+                <div id="kipas" class="status-badge off">
+                    OFF
+                </div>
+            </div>
+        </div>
+
+        <div class="card status-card">
+            <div class="status-icon">⬇️</div>
+            <div class="status-info">
+                <h3>Setpoint Minimum</h3>
+                <div id="lowVal" class="setpoint-value">--</div>
+                <span class="unit">°C</span>
+            </div>
+        </div>
+
+        <div class="card status-card">
+            <div class="status-icon">⬆️</div>
+            <div class="status-info">
+                <h3>Setpoint Maksimum</h3>
+                <div id="highVal" class="setpoint-value">--</div>
+                <span class="unit">°C</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Control Panel -->
+    <div class="card control-card">
+        <div class="card-header">
+            <h2>🎮 Control Panel</h2>
+            <span class="control-badge">Manual Override</span>
+        </div>
+        
+        <div class="control-group">
+            <div class="control-item">
+                <label>Setpoint LOW (°C)</label>
+                <div class="input-group">
+                    <input type="number" id="setLow" step="0.1" placeholder="Masukkan suhu minimum">
+                    <button onclick="kirimLow()" class="btn-primary">
+                        <span>✈️</span> Kirim
+                    </button>
+                </div>
+                <small class="input-hint">Suhu terendah untuk inkubator</small>
+            </div>
+
+            <div class="control-item">
+                <label>Setpoint HIGH (°C)</label>
+                <div class="input-group">
+                    <input type="number" id="setHigh" step="0.1" placeholder="Masukkan suhu maksimum">
+                    <button onclick="kirimHigh()" class="btn-primary">
+                        <span>✈️</span> Kirim
+                    </button>
+                </div>
+                <small class="input-hint">Suhu tertinggi untuk inkubator</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Status -->
+    <div class="card system-card">
+        <div class="system-status">
+            <div class="status-item">
+                <span class="status-label">📡 MQTT Broker:</span>
+                <span class="status-value">HiveMQ Cloud</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">🆔 Client ID:</span>
+                <span class="status-value" id="clientId">--</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">📊 Data Points:</span>
+                <span class="status-value" id="dataPoints">0</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
